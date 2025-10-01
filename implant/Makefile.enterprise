@@ -1,0 +1,235 @@
+# Scythe Enterprise Implant Makefile
+# Builds the enterprise-grade C++ implant with advanced crypto features
+
+CXX = g++
+CXXFLAGS = -std=c++17 -Wall -Wextra -O2 -DNDEBUG
+DEBUG_FLAGS = -g -DDEBUG -O0
+INCLUDES = -I/usr/include/boost -I/usr/include/openssl -Isrc
+LIBS = -lssl -lcrypto -lboost_system -lboost_filesystem -lcpr -lpthread
+
+# Directories
+SRC_DIR = src
+OBJ_DIR = obj
+BIN_DIR = bin
+
+# Source files
+ENTERPRISE_SOURCES = $(SRC_DIR)/enterprise_implant.cpp $(SRC_DIR)/enterprise_main.cpp $(SRC_DIR)/tasks.cpp
+ENTERPRISE_OBJECTS = $(ENTERPRISE_SOURCES:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
+
+# Test source files
+TEST_SOURCES = $(SRC_DIR)/enterprise_implant.cpp test/test_enterprise.cpp
+TEST_OBJECTS = $(TEST_SOURCES:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
+
+# Target executables
+ENTERPRISE_TARGET = $(BIN_DIR)/enterprise_implant
+TEST_TARGET = $(BIN_DIR)/test_enterprise
+
+# Platform-specific settings
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Linux)
+    CXXFLAGS += -DLINUX
+    LIBS += -ldl
+endif
+ifeq ($(UNAME_S),Darwin)
+    CXXFLAGS += -DMACOS
+    INCLUDES += -I/opt/homebrew/include
+    LIBS += -L/opt/homebrew/lib
+endif
+ifeq ($(OS),Windows_NT)
+    CXXFLAGS += -DWINDOWS -static
+    LIBS += -lws2_32 -lpsapi -lcrypt32 -ladvapi32
+    ENTERPRISE_TARGET = $(BIN_DIR)/enterprise_implant.exe
+    TEST_TARGET = $(BIN_DIR)/test_enterprise.exe
+endif
+
+# Default target
+.PHONY: all
+all: directories $(ENTERPRISE_TARGET)
+
+# Debug build
+.PHONY: debug
+debug: CXXFLAGS := $(CXXFLAGS) $(DEBUG_FLAGS) -UDEBUG
+debug: directories $(ENTERPRISE_TARGET)
+
+# Release build (optimized, stripped)
+.PHONY: release
+release: CXXFLAGS += -O3 -DNDEBUG -ffunction-sections -fdata-sections
+release: LDFLAGS += -Wl,--gc-sections -s
+release: directories $(ENTERPRISE_TARGET)
+
+# Test build
+.PHONY: test
+test: directories $(TEST_TARGET)
+	@echo "Running enterprise crypto tests..."
+	@$(TEST_TARGET)
+
+# Create necessary directories
+.PHONY: directories
+directories:
+	@mkdir -p $(OBJ_DIR) $(BIN_DIR)
+
+# Build enterprise implant
+$(ENTERPRISE_TARGET): $(ENTERPRISE_OBJECTS)
+	@echo "Linking enterprise implant..."
+	@$(CXX) $(CXXFLAGS) $(ENTERPRISE_OBJECTS) -o $@ $(LIBS)
+	@echo "✅ Enterprise implant built: $@"
+
+# Build test executable
+$(TEST_TARGET): $(TEST_OBJECTS)
+	@echo "Linking test executable..."
+	@$(CXX) $(CXXFLAGS) $(TEST_OBJECTS) -o $@ $(LIBS)
+	@echo "✅ Test executable built: $@"
+
+# Compile source files
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
+	@echo "Compiling $<..."
+	@$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
+
+$(OBJ_DIR)/%.o: test/%.cpp
+	@echo "Compiling $<..."
+	@$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
+
+# Standalone crypto test
+.PHONY: crypto-test
+crypto-test: directories
+	@echo "Building and running crypto tests..."
+	@$(CXX) $(CXXFLAGS) $(INCLUDES) $(SRC_DIR)/enterprise_implant.cpp -DCRYPTO_TEST_MAIN -o $(BIN_DIR)/crypto_test $(LIBS)
+	@$(BIN_DIR)/crypto_test
+
+# Performance benchmark
+.PHONY: benchmark
+benchmark: directories
+	@echo "Building performance benchmark..."
+	@$(CXX) $(CXXFLAGS) -O3 $(INCLUDES) $(SRC_DIR)/enterprise_implant.cpp -DBENCHMARK_MAIN -o $(BIN_DIR)/benchmark $(LIBS)
+	@echo "Running benchmark..."
+	@$(BIN_DIR)/benchmark
+
+# Memory check with valgrind (Linux only)
+.PHONY: memcheck
+memcheck: debug
+ifeq ($(UNAME_S),Linux)
+	@echo "Running memory check with valgrind..."
+	@valgrind --tool=memcheck --leak-check=full --show-leak-kinds=all $(ENTERPRISE_TARGET) --test-crypto
+else
+	@echo "Memory check only available on Linux"
+endif
+
+# Static analysis with cppcheck
+.PHONY: static-analysis
+static-analysis:
+	@echo "Running static analysis..."
+	@cppcheck --enable=all --std=c++17 --suppress=missingIncludeSystem $(SRC_DIR)/
+
+# Security analysis with checksec (Linux only)
+.PHONY: security-check
+security-check: release
+ifeq ($(UNAME_S),Linux)
+	@echo "Running security analysis..."
+	@checksec --file=$(ENTERPRISE_TARGET)
+else
+	@echo "Security check only available on Linux"
+endif
+
+# Cross-compile for Windows (using MinGW)
+.PHONY: windows
+windows:
+	@echo "Cross-compiling for Windows..."
+	@$(MAKE) CXX=x86_64-w64-mingw32-g++ CXXFLAGS="$(CXXFLAGS) -DWINDOWS -static" \
+		LIBS="-lssl -lcrypto -lboost_system-mt -lcpr -lws2_32 -lpsapi -lcrypt32 -ladvapi32" \
+		ENTERPRISE_TARGET=$(BIN_DIR)/enterprise_implant.exe
+
+# Docker build
+.PHONY: docker
+docker:
+	@echo "Building enterprise implant in Docker container..."
+	@docker build -t scythe-enterprise-implant .
+	@docker run --rm -v $(PWD)/bin:/output scythe-enterprise-implant cp /app/bin/enterprise_implant /output/
+
+# Install dependencies (Ubuntu/Debian)
+.PHONY: deps-ubuntu
+deps-ubuntu:
+	@echo "Installing dependencies for Ubuntu/Debian..."
+	@sudo apt-get update
+	@sudo apt-get install -y build-essential libssl-dev libboost-all-dev libcpr-dev
+
+# Install dependencies (CentOS/RHEL)
+.PHONY: deps-centos
+deps-centos:
+	@echo "Installing dependencies for CentOS/RHEL..."
+	@sudo yum install -y gcc-c++ openssl-devel boost-devel libcpr-devel
+
+# Install dependencies (macOS)
+.PHONY: deps-macos
+deps-macos:
+	@echo "Installing dependencies for macOS..."
+	@brew install openssl boost cpr
+
+# Package release
+.PHONY: package
+package: release
+	@echo "Creating release package..."
+	@mkdir -p release/scythe-enterprise-implant
+	@cp $(ENTERPRISE_TARGET) release/scythe-enterprise-implant/
+	@cp README.md release/scythe-enterprise-implant/ 2>/dev/null || echo "# Scythe Enterprise Implant" > release/scythe-enterprise-implant/README.md
+	@cp LICENSE release/scythe-enterprise-implant/ 2>/dev/null || echo "MIT License" > release/scythe-enterprise-implant/LICENSE
+	@cd release && tar -czf scythe-enterprise-implant-$(shell uname -s)-$(shell uname -m).tar.gz scythe-enterprise-implant/
+	@echo "✅ Release package created: release/scythe-enterprise-implant-$(shell uname -s)-$(shell uname -m).tar.gz"
+
+# Clean build artifacts
+.PHONY: clean
+clean:
+	@echo "Cleaning build artifacts..."
+	@rm -rf $(OBJ_DIR) $(BIN_DIR) release/
+	@echo "✅ Clean complete"
+
+# Deep clean (including dependencies)
+.PHONY: distclean
+distclean: clean
+	@echo "Deep cleaning..."
+	@rm -rf deps/
+	@echo "✅ Deep clean complete"
+
+# Help target
+.PHONY: help
+help:
+	@echo "Scythe Enterprise Implant Build System"
+	@echo "======================================"
+	@echo ""
+	@echo "Targets:"
+	@echo "  all              Build enterprise implant (default)"
+	@echo "  debug            Build with debug symbols"
+	@echo "  release          Build optimized release version"
+	@echo "  test             Build and run tests"
+	@echo "  crypto-test      Run standalone crypto tests"
+	@echo "  benchmark        Run performance benchmark"
+	@echo "  memcheck         Run memory leak check (Linux only)"
+	@echo "  static-analysis  Run static code analysis"
+	@echo "  security-check   Run security analysis (Linux only)"
+	@echo "  windows          Cross-compile for Windows"
+	@echo "  docker           Build in Docker container"
+	@echo "  package          Create release package"
+	@echo "  clean            Remove build artifacts"
+	@echo "  distclean        Deep clean including dependencies"
+	@echo ""
+	@echo "Dependency Installation:"
+	@echo "  deps-ubuntu      Install dependencies (Ubuntu/Debian)"
+	@echo "  deps-centos      Install dependencies (CentOS/RHEL)"
+	@echo "  deps-macos       Install dependencies (macOS)"
+	@echo ""
+	@echo "Examples:"
+	@echo "  make release                    # Build optimized version"
+	@echo "  make test                       # Run all tests"
+	@echo "  make crypto-test               # Test crypto functionality"
+	@echo "  make benchmark                 # Performance testing"
+	@echo "  make package                   # Create release package"
+	@echo ""
+	@echo "Enterprise Features:"
+	@echo "  ✅ AES-256-GCM Encryption with Key Rotation"
+	@echo "  ✅ Advanced Obfuscation (Case-Alternating Reverse Base64)"
+	@echo "  ✅ Real-time Security Monitoring & Alerting"
+	@echo "  ✅ Anti-Debug & Anti-VM Detection"
+	@echo "  ✅ Enterprise Compliance Support"
+	@echo "  ✅ Rate Limiting & Performance Metrics"
+
+# Phony targets to avoid conflicts with files of the same name
+.PHONY: all debug release test crypto-test benchmark memcheck static-analysis security-check windows docker package clean distclean help deps-ubuntu deps-centos deps-macos directories

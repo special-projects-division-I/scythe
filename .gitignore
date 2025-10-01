@@ -1,0 +1,216 @@
+# SCYTHE Framework .gitignore
+
+# Compiled binaries
+*.exe
+*.dll
+*.so
+*.dylib
+*.a
+*.lib
+
+# C++ build artifacts
+*.o
+*.obj
+*.pch
+*.pdb
+*.ilk
+*.meta
+*.idb
+*.res
+*.rc
+*.manifest
+*.tlog
+*.lastbuildstate
+*.iobj
+*.ipdb
+*.exp
+
+# Build directories
+build/
+Build/
+BUILD/
+out/
+Out/
+bin/
+Bin/
+obj/
+Obj/
+target/
+Target/
+
+# Makefile artifacts
+*.d
+*.make
+Makefile.bak
+
+# CMake
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+CMakeOutput.log
+CMakeError.log
+*.cmake
+
+# Visual Studio / MSBuild
+.vs/
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+*.sln
+*.suo
+*.user
+*.ncb
+*.aps
+*.plg
+*.opt
+*.clw
+*.pch
+*.sdf
+*.opensdf
+*.VC.db
+*.VC.opendb
+*.vcxitems*
+
+# Code::Blocks
+*.layout
+*.depend
+
+# Dev-C++
+*.dev
+
+# Nim artifacts
+nimcache/
+*.exe
+*.app
+main
+
+# Rust artifacts (server)
+Cargo.lock
+target/
+**/*.rs.bk
+*.pdb
+
+# Logs and databases
+*.log
+*.db
+*.sqlite
+*.sqlite3
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
+.env.local
+.env.production
+.env.test
+
+# Keys and certificates
+*.key
+*.pem
+*.crt
+*.cer
+*.p12
+*.pfx
+*.jks
+
+# Configuration files with secrets
+config.ini
+settings.json
+secrets.txt
+
+# Test artifacts
+test_results/
+coverage/
+*.gcov
+*.gcda
+*.gcno
+
+# Documentation build
+docs/_build/
+docs/html/
+docs/latex/
+
+# Package managers
+node_modules/
+.npm
+.yarn-cache
+vendor/
+
+# Archives
+*.zip
+*.tar.gz
+*.tar.bz2
+*.rar
+*.7z
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+*.orig
+
+# Platform specific
+.AppleDouble
+.LSOverride
+Icon?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Desktop.ini
+
+# Runtime artifacts
+*.pid
+*.seed
+*.pid.lock
+*.lock
+
+# Coverage reports
+*.coverage
+htmlcov/
+.coverage.*
+coverage.xml
+*.cover
+
+# Profiling
+*.prof
+*.lprof
+*.pyc
+*.pyo
+
+# Local development
+local/
+scratch/
+experiments/
+prototypes/
+
+# Editor artifacts
+*sublime-project
+*sublime-workspace
+*.code-workspace
+
+# Vim
+[._]*.s[a-w][a-z]
+[._]s[a-w][a-z]
+*.un~
+Session.vim
+.netrwhist
+*~
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
