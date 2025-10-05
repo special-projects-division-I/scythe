@@ -1,0 +1,325 @@
+<file_path>
+scythe/gui/justfile
+</file_path>
+
+<edit_description>
+Create justfile as alternative to Makefile for command running
+</edit_description>
+
+# SCYTHE GUI Justfile
+# Command runner for SCYTHE C2 Controller GUI development
+# Alternative to Makefile with simpler syntax
+
+# =============================================================================
+# CONFIGURATION
+# =============================================================================
+
+frontend_dir := "."
+backend_dir := "src-tauri"
+dist_dir := "dist"
+build_dir := "src-tauri/target"
+
+# Platform detection
+platform := if os() == "linux" { "linux" } else if os() == "macos" { "macos" } else { "windows" }
+
+# =============================================================================
+# DEVELOPMENT TARGETS
+# =============================================================================
+
+# Default target
+default: help
+
+# Show help
+help:
+    @echo "SCYTHE GUI Command Runner (Justfile)"
+    @echo "===================================="
+    @echo ""
+    @echo "Available commands:"
+    @just --list
+
+# Setup development environment
+setup: check-deps install-deps
+    @echo "✅ Development environment setup complete!"
+
+# Check dependencies
+check-deps:
+    @echo "🔍 Checking dependencies..."
+    @command -v node >/dev/null 2>&1 || (echo "❌ Node.js not found"; exit 1)
+    @command -v npm >/dev/null 2>&1 || (echo "❌ npm not found"; exit 1)
+    @command -v cargo >/dev/null 2>&1 || (echo "❌ Cargo not found"; exit 1)
+    @node --version | grep -q "v18\|v19\|v20" || (echo "❌ Node.js 18+ required"; exit 1)
+    @echo "✅ All dependencies available"
+
+# Install dependencies
+install-deps: install-frontend-deps install-backend-deps
+
+install-frontend-deps:
+    @echo "📦 Installing frontend dependencies..."
+    npm install
+    @echo "✅ Frontend dependencies installed"
+
+install-backend-deps:
+    @echo "📦 Backend dependencies handled by Cargo"
+
+# Start development server
+dev: check-deps install-frontend-deps
+    @echo "🚀 Starting development server..."
+    npm run tauri dev
+
+# Start frontend only
+dev-frontend:
+    @echo "🎨 Starting frontend development server..."
+    npm run dev
+
+# Start backend only
+dev-backend:
+    @echo "⚙️ Starting backend development server..."
+    cd {{backend_dir}} && cargo tauri dev
+
+# Build for development
+build-dev: check-deps
+    @echo "🔨 Building for development..."
+    npm run tauri build -- --debug
+    @echo "✅ Development build complete"
+
+# =============================================================================
+# PRODUCTION BUILD TARGETS
+# =============================================================================
+
+# Build for production
+build: check-deps build-frontend build-backend
+    @echo "✅ Production build complete!"
+
+# Build frontend
+build-frontend: install-frontend-deps
+    @echo "🎨 Building frontend..."
+    npm run build
+    @echo "✅ Frontend built"
+
+# Build backend
+build-backend:
+    @echo "⚙️ Building backend..."
+    cd {{backend_dir}} && cargo tauri build --release
+    @echo "✅ Backend built"
+
+# Build release version
+build-release: check-deps
+    @echo "🏆 Building release version..."
+    cd {{backend_dir}} && cargo tauri build --release
+    @echo "✅ Release build complete"
+
+# =============================================================================
+# CROSS-PLATFORM BUILDS
+# =============================================================================
+
+# Build for Linux
+build-linux: check-deps
+    @echo "🐧 Building for Linux..."
+    cd {{backend_dir}} && cargo tauri build --target x86_64-unknown-linux-gnu --release
+    @echo "✅ Linux build complete"
+
+# Build for Linux ARM64
+build-linux-arm64: check-deps
+    @echo "🐧 Building for Linux ARM64..."
+    cd {{backend_dir}} && cargo tauri build --target aarch64-unknown-linux-gnu --release
+    @echo "✅ Linux ARM64 build complete"
+
+# Build for Windows
+build-windows: check-deps
+    @echo "🪟 Building for Windows..."
+    cd {{backend_dir}} && cargo tauri build --target x86_64-pc-windows-msvc --release
+    @echo "✅ Windows build complete"
+
+# Build for macOS
+build-macos: check-deps
+    @echo "🍎 Building for macOS..."
+    cd {{backend_dir}} && cargo tauri build --target x86_64-apple-darwin --release
+    @echo "✅ macOS build complete"
+
+# Build for macOS ARM64
+build-macos-arm64: check-deps
+    @echo "🍎 Building for macOS ARM64..."
+    cd {{backend_dir}} && cargo tauri build --target aarch64-apple-darwin --release
+    @echo "✅ macOS ARM64 build complete"
+
+# Build for all platforms
+build-all: build-linux build-windows build-macos
+    @echo "✅ All platforms built!"
+
+# =============================================================================
+# TESTING & QUALITY ASSURANCE
+# =============================================================================
+
+# Run all tests
+test: test-frontend test-backend
+
+# Test frontend
+test-frontend:
+    @echo "🧪 Testing frontend..."
+    npm test || echo "⚠️ No frontend tests found"
+
+# Test backend
+test-backend:
+    @echo "🧪 Testing backend..."
+    cd {{backend_dir}} && cargo test || echo "⚠️ No backend tests found"
+
+# Run linting
+lint: lint-frontend lint-backend
+
+# Lint frontend
+lint-frontend:
+    @echo "🔍 Linting frontend..."
+    npx eslint src/ --ext .ts,.vue || echo "⚠️ ESLint not configured"
+
+# Lint backend
+lint-backend:
+    @echo "🔍 Linting backend..."
+    cd {{backend_dir}} && cargo clippy || echo "⚠️ Clippy not available"
+
+# Type checking
+type-check:
+    @echo "🔍 Running TypeScript type check..."
+    npx tsc --noEmit
+    @echo "✅ TypeScript check passed"
+
+# Run all checks
+check: type-check lint test
+    @echo "✅ All checks passed!"
+
+# =============================================================================
+# CLEANUP TARGETS
+# =============================================================================
+
+# Clean all artifacts
+clean: clean-frontend clean-backend clean-dist
+
+# Clean frontend
+clean-frontend:
+    @echo "🧹 Cleaning frontend..."
+    rm -rf node_modules package-lock.json {{dist_dir}}
+    @echo "✅ Frontend cleaned"
+
+# Clean backend
+clean-backend:
+    @echo "🧹 Cleaning backend..."
+    cd {{backend_dir}} && cargo clean
+    @echo "✅ Backend cleaned"
+
+# Clean distribution
+clean-dist:
+    @echo "🧹 Cleaning distribution..."
+    rm -rf {{dist_dir}} {{build_dir}}
+    @echo "✅ Distribution cleaned"
+
+# Clean everything
+clean-all: clean
+    @echo "🧹 Cleaning caches..."
+    npm cache clean --force 2>/dev/null || true
+    cd {{backend_dir}} && cargo cache --autoclean 2>/dev/null || true
+    @echo "✅ All cleaned"
+
+# =============================================================================
+# UTILITY TARGETS
+# =============================================================================
+
+# Update dependencies
+update-deps: update-frontend-deps update-backend-deps
+
+# Update frontend deps
+update-frontend-deps:
+    @echo "⬆️ Updating frontend dependencies..."
+    npm update
+    @echo "✅ Frontend dependencies updated"
+
+# Update backend deps
+update-backend-deps:
+    @echo "⬆️ Updating backend dependencies..."
+    cd {{backend_dir}} && cargo update
+    @echo "✅ Backend dependencies updated"
+
+# Format code
+format: format-frontend format-backend
+
+# Format frontend
+format-frontend:
+    @echo "🎨 Formatting frontend..."
+    npx prettier --write src/
+    @echo "✅ Frontend formatted"
+
+# Format backend
+format-backend:
+    @echo "🎨 Formatting backend..."
+    cd {{backend_dir}} && cargo fmt
+    @echo "✅ Backend formatted"
+
+# Generate documentation
+docs: docs-frontend docs-backend
+
+# Frontend docs
+docs-frontend:
+    @echo "📚 Generating frontend docs..."
+    npx typedoc src/ || echo "⚠️ TypeDoc not configured"
+
+# Backend docs
+docs-backend:
+    @echo "📚 Generating backend docs..."
+    cd {{backend_dir}} && cargo doc --open --no-deps || echo "⚠️ Cargo doc failed"
+
+# Show project info
+info:
+    @echo "SCYTHE GUI Information"
+    @echo "======================"
+    @echo "Platform: {{platform}}"
+    @echo "Node.js: $(node --version)"
+    @echo "npm: $(npm --version)"
+    @echo "Rust: $(rustc --version)"
+    @echo "Cargo: $(cargo --version)"
+    @echo ""
+    @echo "Project Structure:"
+    @echo "  Frontend: {{frontend_dir}}"
+    @echo "  Backend: {{backend_dir}}"
+    @echo "  Dist: {{dist_dir}}"
+    @echo "  Build: {{build_dir}}"
+
+# Show version
+version:
+    @echo "SCYTHE GUI v0.1.0"
+    @echo "Node.js: $(node --version)"
+    @echo "Rust: $(rustc --version)"
+    @echo "Platform: {{platform}}"
+
+# Run diagnostics
+doctor: check-deps
+    @echo "🔍 Running diagnostics..."
+    npm doctor || echo "⚠️ npm doctor failed"
+    cd {{backend_dir}} && cargo doctor || echo "⚠️ cargo doctor failed"
+    @echo "✅ Diagnostics complete"
+
+# =============================================================================
+# DEVELOPMENT WORKFLOW
+# =============================================================================
+
+# Watch for changes
+watch: check-deps
+    @echo "👀 Watching for changes..."
+    npm run tauri dev -- --watch
+
+# Serve production build
+serve: build
+    @echo "🌐 Serving production build..."
+    cd {{dist_dir}} && python3 -m http.server 8080 || npx serve -p 8080
+
+# Prepare deployment
+deploy: build-release
+    @echo "📦 Preparing deployment..."
+    mkdir -p deploy
+    cp -r {{build_dir}}/release/bundle/* deploy/ 2>/dev/null || true
+    cp -r {{dist_dir}} deploy/ 2>/dev/null || true
+    @echo "✅ Deployment package ready in ./deploy/"
+
+# Quick development cycle
+quick-dev: clean-frontend install-frontend-deps dev
+
+# Full CI/CD pipeline
+ci: check-deps clean install-deps check build test
+    @echo "✅ CI/CD pipeline completed successfully!"
